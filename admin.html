@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agroplan Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1a2636; --blue: #2563eb; --blue-light: #dbeafe;
+  --green: #198754; --green-light: #d1e7dd; --red: #dc3545; --red-light: #fee2e2;
+  --gray: #64748b; --gray-light: #f1f5f9; --gray-border: #e2e8f0;
+  --white: #fff; --text: #1e293b; --text-soft: #64748b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'DM Sans','Segoe UI',system-ui,sans-serif;
+  background:var(--gray-light); color:var(--text);
+  max-width:720px; margin:0 auto; min-height:100vh;
+}
+header {
+  background:var(--navy); color:var(--white); padding:16px 20px;
+  position:sticky; top:0; z-index:100;
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+}
+.logo { font-size:18px; font-weight:800; letter-spacing:2px; }
+.logo-sub { font-size:12px; color:#94a3b8; }
+.tabs {
+  display:flex; border-top:1px solid rgba(255,255,255,.1); margin-top:12px;
+}
+.tab {
+  flex:1; background:none; border:none; color:#94a3b8; padding:10px;
+  font-size:14px; font-weight:500; cursor:pointer; font-family:inherit;
+  border-bottom:3px solid transparent;
+}
+.tab.active {
+  color:var(--white); font-weight:700; background:rgba(255,255,255,.08);
+  border-bottom-color:var(--blue);
+}
+main { padding:16px; }
+.card {
+  background:var(--white); border-radius:12px; padding:16px;
+  margin-bottom:10px; border:1px solid var(--gray-border);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.card-info { flex:1; }
+.card-name { font-size:15px; font-weight:700; color:var(--navy); }
+.card-meta { font-size:12px; color:var(--text-soft); margin-top:2px; }
+.card-actions { display:flex; gap:6px; }
+.btn-edit, .btn-del {
+  border:none; border-radius:8px; width:38px; height:38px;
+  font-size:16px; cursor:pointer; font-family:inherit;
+}
+.btn-edit { background:var(--blue-light); color:var(--blue); }
+.btn-del { background:var(--red-light); color:var(--red); }
+.badge-ativo {
+  font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;
+  margin-left:6px;
+}
+.badge-sim { background:var(--green-light); color:var(--green); }
+.badge-nao { background:var(--red-light); color:var(--red); }
+
+.btn-add-float {
+  position:fixed; bottom:20px; right:20px; width:56px; height:56px;
+  background:var(--blue); color:var(--white); border:none; border-radius:50%;
+  font-size:28px; cursor:pointer; box-shadow:0 4px 16px rgba(37,99,235,.4);
+  z-index:90;
+}
+@media(min-width:720px) {
+  .btn-add-float { right: calc(50% - 360px + 20px); }
+}
+
+/* Modal / Form */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.5);
+  display:flex; align-items:flex-end; justify-content:center;
+  z-index:200; padding:0;
+}
+@media(min-width:500px) {
+  .overlay { align-items:center; padding:20px; }
+}
+.form-modal {
+  background:var(--white); width:100%; max-width:520px;
+  border-radius:16px 16px 0 0; padding:24px 20px 32px;
+  max-height:90vh; overflow-y:auto;
+}
+@media(min-width:500px) {
+  .form-modal { border-radius:16px; }
+}
+.form-title {
+  font-size:18px; font-weight:800; color:var(--navy); margin-bottom:16px;
+}
+.field { margin-bottom:14px; }
+.field label {
+  display:block; font-size:12px; font-weight:700; color:var(--text-soft);
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;
+}
+.field input, .field select {
+  width:100%; padding:12px; font-size:15px; border:2px solid var(--gray-border);
+  border-radius:10px; font-family:inherit; outline:none;
+}
+.field input:focus, .field select:focus { border-color:var(--blue); }
+.field-row { display:flex; gap:10px; }
+.field-row .field { flex:1; }
+.btn-submit {
+  width:100%; padding:14px; font-size:16px; font-weight:800;
+  background:var(--green); color:var(--white); border:none;
+  border-radius:12px; cursor:pointer; font-family:inherit;
+  margin-top:4px;
+}
+.btn-cancel {
+  width:100%; padding:12px; font-size:14px; font-weight:600;
+  background:none; color:var(--gray); border:none; cursor:pointer;
+  font-family:inherit; margin-top:6px;
+}
+
+/* Loading */
+.loading {
+  text-align:center; padding:60px 20px; color:var(--text-soft); font-size:15px;
+}
+.spinner {
+  width:36px; height:36px; border:3px solid var(--gray-border);
+  border-top-color:var(--blue); border-radius:50%;
+  animation:spin .6s linear infinite; margin:0 auto 12px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Toast */
+#toast {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%);
+  padding:10px 22px; border-radius:10px; font-size:14px; font-weight:600;
+  color:var(--white); z-index:999; display:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.2); max-width:90%; text-align:center;
+}
+.screen { display:none; }
+.screen.active { display:block; }
+.empty { text-align:center; padding:40px; color:var(--text-soft); }
+
+.search-bar {
+  width:100%; padding:12px; font-size:15px;
+  border:2px solid var(--gray-border); border-radius:10px;
+  font-family:inherit; margin-bottom:14px; outline:none;
+}
+.search-bar:focus { border-color:var(--blue); }
+footer {
+  text-align:center; padding:16px; font-size:11px; color:var(--text-soft);
+  border-top:1px solid var(--gray-border);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌱 AGROPLAN <span style="font-weight:400;font-size:14px;color:#94a3b8">Admin</span></div>
+  <div class="logo-sub">Gerenciamento de Catálogo</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('produtos')">Produtos</button>
+    <button class="tab" onclick="switchTab('categorias')">Categorias</button>
+    <button class="tab" onclick="switchTab('clientes')">Clientes</button>
+  </div>
+</header>
+
+<div id="toast"></div>
+
+<main>
+  <div id="screen-produtos" class="screen active"></div>
+  <div id="screen-categorias" class="screen"></div>
+  <div id="screen-clientes" class="screen"></div>
+</main>
+
+<button class="btn-add-float" id="btnAdd" onclick="abrirFormNovo()">+</button>
+
+<div id="modalOverlay" class="overlay" style="display:none">
+  <div class="form-modal" id="formModal"></div>
+</div>
+
+<footer>Agroplan Distribuidora · Painel Administrativo</footer>
+
+<script>
+// ─── CONFIG ───
+const API = 'https://script.google.com/macros/s/AKfycbwwHHCw69KXjjdwpnzvGZem4xzIfdd1rjD6GEClKHdMP5GbztOPHSlwZav7ijFQptJx/exec';
+
+let dados = { produtos:[], categorias:[], clientes:[] };
+let abaAtual = 'produtos';
+let filtro = '';
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', carregarTudo);
+
+async function carregarTudo() {
+  mostrarLoading();
+  try {
+    const r = await fetch(API + '?action=tudo');
+    const j = await r.json();
+    if (j.status === 'ok') {
+      dados.produtos = j.produtos || [];
+      dados.categorias = j.categorias || [];
+      dados.clientes = j.clientes || [];
+    }
+  } catch(e) {
+    toast('Erro ao carregar dados', 'error');
+    console.error(e);
+  }
+  renderTab();
+}
+
+function mostrarLoading() {
+  ['produtos','categorias','clientes'].forEach(t => {
+    document.getElementById('screen-'+t).innerHTML =
+      '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+  });
+}
+
+// ─── TABS ───
+function switchTab(tab) {
+  abaAtual = tab;
+  filtro = '';
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.className = 'tab' + (['produtos','categorias','clientes'][i]===tab?' active':'');
+  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  renderTab();
+}
+
+function renderTab() {
+  if (abaAtual === 'produtos') renderProdutos();
+  else if (abaAtual === 'categorias') renderCategorias();
+  else renderClientes();
+}
+
+// ─── PRODUTOS ───
+function renderProdutos() {
+  const el = document.getElementById('screen-produtos');
+  let list = dados.produtos;
+  if (filtro) list = list.filter(p =>
+    p.name.toLowerCase().includes(filtro.toLowerCase()) ||
+    p.cat.toLowerCase().includes(filtro.toLowerCase())
+  );
+
+  let html = '<input class="search-bar" placeholder="Buscar produto..." oninput="filtro=this.value;renderProdutos()" value="'+filtro+'">';
+
+  if (list.length === 0) {
+    html += '<div class="empty">Nenhum produto encontrado.</div>';
+  } else {
+    list.forEach(p => {
+      const catNome = (dados.categorias.find(c=>c.id===p.cat)||{}).label || p.cat;
+      const ativo = (p.ativo||'SIM').toUpperCase() === 'SIM';
+      html += `<div class="card">
+        <div class="card-info">
+          <div class="card-name">${p.name}
+            <span class="badge-ativo ${ativo?'badge-sim':'badge-nao'}">${ativo?'Ativo':'Inativo'}</span>
+          </div>
+          <div class="card-meta">${catNome} · R$ ${Number(p.preco).toFixed(2)} · Piso: R$ ${Number(p.piso).toFixed(2)} · ${p.un}</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-edit" onclick='editarProduto(${JSON.stringify(p).replace(/'/g,"&#39;")})'>✏️</button>
+          <button class="btn-del" onclick="removerProduto(${p.id})">🗑️</button>
+        </div>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+function abrirFormProduto(p) {
+  const isEdit = p && p.id;
+  const catOptions = dados.categorias.map(c =>
+    `<option value="${c.id}" ${p&&p.cat===c.id?'selected':''}>${c.label}</option>`
+  ).join('');
+
+  document.getElementById('formModal').innerHTML = `
+    <div class="form-title">${isEdit?'Editar':'Novo'} Produto</div>
+    <div class="field">
+      <label>Nome do Produto</label>
+      <input id="f_name" value="${p?p.name:''}" placeholder="Ex: Couve-flor">
+    </div>
+    <div class="field">
+      <label>Categoria</label>
+      <select id="f_cat">${catOptions}</select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Preço (R$)</label>
+        <input id="f_preco" type="number" step="0.5" value="${p?p.preco:'25'}" placeholder="25">
+      </div>
+      <div class="field">
+        <label>Piso (R$)</label>
+        <input id="f_piso" type="number" step="0.5" value="${p?p.piso:'20'}" placeholder="20">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Unidade</label>
+        <select id="f_un">
+          <option value="cx 15" ${p&&p.un==='cx 15'?'selected':''}>cx 15</option>
+          <option value="cx" ${p&&p.un==='cx'?'selected':''}>cx</option>
+          <option value="maço" ${p&&p.un==='maço'?'selected':''}>maço</option>
+          <option value="muda" ${p&&p.un==='muda'?'selected':''}>muda</option>
+          <option value="pct" ${p&&p.un==='pct'?'selected':''}>pct</option>
+          <option value="un" ${p&&p.un==='un'?'selected':''}>un</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f_ativo">
+          <option value="SIM" ${!p||(p.ativo||'SIM')==='SIM'?'selected':''}>Ativo</option>
+          <option value="NAO" ${p&&(p.ativo||'')==='NAO'?'selected':''}>Inativo</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="salvarProduto(${isEdit?p.id:'null'})">
+      ${isEdit?'Salvar Alterações':'Adicionar Produto'}
+    </button>
+    <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+  `;
+  document.getElementById('modalOverlay').style.display = '';
+}
+
+function editarProduto(p) { abrirFormProduto(p); }
+
+async function salvarProduto(id) {
+  const produto = {
+    id: id || '',
+    name: document.getElementById('f_name').value.trim(),
+    cat: document.getElementById('f_cat').value,
+    preco: parseFloat(document.getElementById('f_preco').value) || 0,
+    piso: parseFloat(document.getElementById('f_piso').value) || 0,
+    un: document.getElementById('f_un').value,
+    ativo: document.getElementById('f_ativo').value
+  };
+  if (!produto.name) { toast('Informe o nome','error'); return; }
+
+  await enviarPost({ action:'salvar_produto', produto });
+  fecharModal();
+  await carregarTudo();
+  toast(id ? 'Produto atualizado!' : 'Produto adicionado!');
+}
+
+async function removerProduto(id) {
+  if (!confirm('Remover este produto?')) return;
+  await enviarPost({ action:'remover_produto', id });
+  await carregarTudo();
+  toast('Produto removido');
+}
+
+// ─── CATEGORIAS ───
+function renderCategorias() {
+  const el = document.getElementById('screen-categorias');
+  let html = '';
+  if (dados.categorias.length === 0) {
+    html = '<div class="empty">Nenhuma categoria.</div>';
+  } else {
+    dados.categorias.forEach(c => {
+      const ativo = (c.ativo||'SIM').toUpperCase() === 'SIM';
+      html += `<div class="card">
+        <div class="card-info">
+          <div class="card-name">${c.icon} ${c.label}
+            <span class="badge-ativo ${ativo?'badge-sim':'badge-nao'}">${ativo?'Ativo':'Inativo'}</span>
+          </div>
+          <div class="card-meta">ID: ${c.id}</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-edit" onclick='editarCategoria(${JSON.stringify(c).replace(/'/g,"&#39;")})'>✏️</button>
+          <button class="btn-del" onclick="removerCategoria('${c.id}')">🗑️</button>
+        </div>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+function abrirFormCategoria(c) {
+  const isEdit = c && c.id;
+  document.getElementById('formModal').innerHTML = `
+    <div class="form-title">${isEdit?'Editar':'Nova'} Categoria</div>
+    <div class="field">
+      <label>ID (sem espaço, minúsculo)</label>
+      <input id="f_catid" value="${c?c.id:''}" placeholder="Ex: temperos" ${isEdit?'readonly style="background:#f1f5f9"':''}>
+    </div>
+    <div class="field">
+      <label>Nome</label>
+      <input id="f_catlabel" value="${c?c.label:''}" placeholder="Ex: Temperos/Chás">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Ícone (emoji)</label>
+        <input id="f_caticon" value="${c?c.icon:'🌿'}" placeholder="🌿" style="font-size:24px;text-align:center">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f_catativo">
+          <option value="SIM" ${!c||(c.ativo||'SIM')==='SIM'?'selected':''}>Ativo</option>
+          <option value="NAO" ${c&&c.ativo==='NAO'?'selected':''}>Inativo</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="salvarCategoria(${isEdit?'true':'false'})">
+      ${isEdit?'Salvar':'Criar Categoria'}
+    </button>
+    <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+  `;
+  document.getElementById('modalOverlay').style.display = '';
+}
+
+function editarCategoria(c) { abrirFormCategoria(c); }
+
+async function salvarCategoria(isEdit) {
+  const cat = {
+    id: document.getElementById('f_catid').value.trim().toLowerCase(),
+    label: document.getElementById('f_catlabel').value.trim(),
+    icon: document.getElementById('f_caticon').value.trim(),
+    ativo: document.getElementById('f_catativo').value
+  };
+  if (!cat.id || !cat.label) { toast('Preencha ID e nome','error'); return; }
+  await enviarPost({ action:'salvar_categoria', categoria: cat });
+  fecharModal();
+  await carregarTudo();
+  toast(isEdit ? 'Categoria atualizada!' : 'Categoria criada!');
+}
+
+async function removerCategoria(id) {
+  if (!confirm('Remover esta categoria?')) return;
+  await enviarPost({ action:'remover_categoria', id });
+  await carregarTudo();
+  toast('Categoria removida');
+}
+
+// ─── CLIENTES ───
+function renderClientes() {
+  const el = document.getElementById('screen-clientes');
+  let list = dados.clientes;
+  if (filtro) list = list.filter(c => c.nome.toLowerCase().includes(filtro.toLowerCase()));
+
+  let html = '<input class="search-bar" placeholder="Buscar cliente..." oninput="filtro=this.value;renderClientes()" value="'+filtro+'">';
+
+  if (list.length === 0) {
+    html += '<div class="empty">Nenhum cliente encontrado.</div>';
+  } else {
+    list.forEach(c => {
+      const ativo = (c.ativo||'SIM').toUpperCase() === 'SIM';
+      html += `<div class="card">
+        <div class="card-info">
+          <div class="card-name">🏪 ${c.nome}
+            <span class="badge-ativo ${ativo?'badge-sim':'badge-nao'}">${ativo?'Ativo':'Inativo'}</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-edit" onclick='editarCliente(${JSON.stringify(c).replace(/'/g,"&#39;")})'>✏️</button>
+          <button class="btn-del" onclick="removerCliente('${c.nome.replace(/'/g,"\\'")}')">🗑️</button>
+        </div>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+function abrirFormCliente(c) {
+  const isEdit = c && c.nome;
+  document.getElementById('formModal').innerHTML = `
+    <div class="form-title">${isEdit?'Editar':'Novo'} Cliente</div>
+    <div class="field">
+      <label>Nome do Cliente</label>
+      <input id="f_clinome" value="${c?c.nome:''}" placeholder="Ex: Mercado Central">
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="f_cliativo">
+        <option value="SIM" ${!c||(c.ativo||'SIM')==='SIM'?'selected':''}>Ativo</option>
+        <option value="NAO" ${c&&c.ativo==='NAO'?'selected':''}>Inativo</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="salvarCliente(${isEdit?"'"+c.nome.replace(/'/g,"\\'")+"'":'null'})">
+      ${isEdit?'Salvar':'Adicionar Cliente'}
+    </button>
+    <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+  `;
+  document.getElementById('modalOverlay').style.display = '';
+}
+
+function editarCliente(c) { abrirFormCliente(c); }
+
+async function salvarCliente(nomeOriginal) {
+  const cliente = {
+    nome: document.getElementById('f_clinome').value.trim(),
+    ativo: document.getElementById('f_cliativo').value,
+    nomeOriginal: nomeOriginal || ''
+  };
+  if (!cliente.nome) { toast('Informe o nome','error'); return; }
+  await enviarPost({ action:'salvar_cliente', cliente });
+  fecharModal();
+  await carregarTudo();
+  toast(nomeOriginal ? 'Cliente atualizado!' : 'Cliente adicionado!');
+}
+
+async function removerCliente(nome) {
+  if (!confirm('Remover ' + nome + '?')) return;
+  await enviarPost({ action:'remover_cliente', nome });
+  await carregarTudo();
+  toast('Cliente removido');
+}
+
+// ─── GENÉRICOS ───
+function abrirFormNovo() {
+  if (abaAtual === 'produtos') abrirFormProduto(null);
+  else if (abaAtual === 'categorias') abrirFormCategoria(null);
+  else abrirFormCliente(null);
+}
+
+function fecharModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) fecharModal();
+});
+
+async function enviarPost(body) {
+  try {
+    await fetch(API, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body)
+    });
+    // Aguarda o Sheets processar
+    await new Promise(r => setTimeout(r, 1500));
+  } catch(e) {
+    toast('Erro ao salvar', 'error');
+    console.error(e);
+  }
+}
+
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type==='error' ? 'var(--red)' : 'var(--green)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display='none', 2500);
+}
+</script>
+</body>
+</html>

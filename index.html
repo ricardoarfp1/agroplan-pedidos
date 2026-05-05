@@ -557,8 +557,8 @@ footer {
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwwHHCw69KXjjdwpnzvGZem4xzIfdd1rjD6GEClKHdMP5GbztOPHSlwZav7ijFQptJx/exec';
 // Quando o Apps Script estiver pronto, descomentar e preencher:
 
-// ─── CATÁLOGO DE PRODUTOS ───
-const CATEGORIES = [
+// ─── CATÁLOGO DE PRODUTOS (fallback offline) ───
+let CATEGORIES = [
   { id: 'brasicas',   label: 'Brásicas',       icon: '🥬' },
   { id: 'alfaces',    label: 'Alfaces',        icon: '🥗' },
   { id: 'verao',      label: 'Verão',          icon: '🍅' },
@@ -569,7 +569,7 @@ const CATEGORIES = [
   { id: 'sementes',   label: 'Sementes',       icon: '🌱' },
 ];
 
-const PRODUCTS = [
+let PRODUCTS = [
   // Brásicas - cx 15
   { id:1,  name:'Couve-flor',        cat:'brasicas',  preco:25, piso:22, un:'cx 15' },
   { id:2,  name:'Couve-folha',       cat:'brasicas',  preco:25, piso:22, un:'cx 15' },
@@ -613,11 +613,52 @@ const PRODUCTS = [
   { id:33, name:'Sementes (geral)',   cat:'sementes',  preco:15, piso:10, un:'pct' },
 ];
 
-// Clientes cadastrados (será expandido com dados reais)
-const CLIENTS = [
+// Clientes cadastrados (fallback offline)
+let CLIENTS = [
   'AgroSul', 'Cris', 'Marcos Super Royal', 'Prefeitura',
   'Iboi', 'Douglas', 'Loja Centro', 'Mercado Bela Vista'
 ];
+
+// ─── CARREGAMENTO DINÂMICO DO CATÁLOGO ───
+async function carregarCatalogo() {
+  // Tenta carregar do servidor
+  if (navigator.onLine) {
+    try {
+      const r = await fetch(SYNC_URL + '?action=tudo');
+      const j = await r.json();
+      if (j.status === 'ok') {
+        if (j.produtos && j.produtos.length > 0) {
+          PRODUCTS = j.produtos.filter(p => (p.ativo||'SIM').toUpperCase() === 'SIM');
+        }
+        if (j.categorias && j.categorias.length > 0) {
+          CATEGORIES = j.categorias.filter(c => (c.ativo||'SIM').toUpperCase() === 'SIM');
+        }
+        if (j.clientes && j.clientes.length > 0) {
+          CLIENTS = j.clientes.filter(c => (c.ativo||'SIM').toUpperCase() === 'SIM').map(c => c.nome);
+        }
+        // Salva no cache local para uso offline
+        localStorage.setItem('agroplan_catalogo', JSON.stringify({
+          produtos: PRODUCTS, categorias: CATEGORIES, clientes: CLIENTS,
+          atualizado: new Date().toISOString()
+        }));
+        console.log('Catálogo atualizado do servidor');
+        return;
+      }
+    } catch(e) {
+      console.log('Falha ao carregar catálogo online:', e);
+    }
+  }
+  // Fallback: tenta cache local
+  try {
+    const cache = JSON.parse(localStorage.getItem('agroplan_catalogo'));
+    if (cache && cache.produtos) {
+      PRODUCTS = cache.produtos;
+      CATEGORIES = cache.categorias || CATEGORIES;
+      CLIENTS = cache.clientes || CLIENTS;
+      console.log('Catálogo carregado do cache local');
+    }
+  } catch(e) {}
+}
 
 // ─── ESTADO DO APP ───
 let state = {
@@ -1218,6 +1259,11 @@ window.addEventListener('online', () => {
   if (pending.length > 0 && SYNC_URL) {
     setTimeout(syncOrders, 2000);
   }
+  // Recarrega catálogo atualizado
+  carregarCatalogo().then(() => {
+    if (state.currentScreen === 'products') renderProducts();
+    if (state.currentScreen === 'client') renderClients();
+  });
 });
 
 window.addEventListener('offline', () => {
@@ -1226,13 +1272,16 @@ window.addEventListener('offline', () => {
 });
 
 // ─── INICIALIZAÇÃO ───
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Registra Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(() => console.log('Service Worker registrado'))
       .catch(err => console.log('SW falhou:', err));
   }
+
+  // Carrega catálogo (servidor ou cache)
+  await carregarCatalogo();
 
   // Verifica motorista salvo
   const saved = getSavedDriver();
