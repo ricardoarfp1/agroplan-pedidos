@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a2636">
+<title>Agroplan Pedidos</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   AGROPLAN PWA — CSS
+   Estética: Industrial-Utilitário / Alto Contraste
+   Foco: Fat-finger, uso ao sol, mobile-first
+   ══════════════════════════════════════════ */
+
+:root {
+  --navy: #1a2636;
+  --navy-light: #24354a;
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+  --green: #198754;
+  --green-light: #d1e7dd;
+  --red: #dc3545;
+  --red-light: #fee2e2;
+  --amber: #b45309;
+  --amber-light: #fef3c7;
+  --gray: #64748b;
+  --gray-light: #f1f5f9;
+  --gray-border: #e2e8f0;
+  --white: #ffffff;
+  --text: #1e293b;
+  --text-soft: #64748b;
+  --radius: 12px;
+  --radius-lg: 14px;
+  --shadow: 0 2px 12px rgba(0,0,0,.08);
+  --shadow-header: 0 2px 16px rgba(0,0,0,.25);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  font-family: 'DM Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--gray-light);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body { max-width: 520px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ─── Animações ─── */
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+
+.fade-in { animation: fadeIn .3s ease-out; }
+.slide-up { animation: slideUp .35s cubic-bezier(.22,.68,0,1); }
+
+/* ─── Header ─── */
+#header {
+  background: var(--navy);
+  color: var(--white);
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow-header);
+}
+.header-top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px 8px;
+}
+.logo-block { display: flex; align-items: center; gap: 10px; }
+.logo-icon { font-size: 26px; }
+.logo-text { font-size: 18px; font-weight: 800; letter-spacing: 2.5px; }
+.logo-sub { font-size: 11px; color: #94a3b8; letter-spacing: .5px; }
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.btn-icon {
+  background: rgba(255,255,255,.12); border: none; border-radius: 8px;
+  color: var(--white); padding: 8px 10px; font-size: 18px; cursor: pointer;
+  position: relative;
+}
+.btn-icon .badge {
+  position: absolute; top: -4px; right: -4px;
+  background: var(--blue); color: var(--white); border-radius: 10px;
+  font-size: 10px; font-weight: 700; padding: 1px 5px;
+}
+.btn-sync {
+  background: var(--green); border: none; border-radius: 8px;
+  color: var(--white); padding: 8px 12px; font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: .3px; white-space: nowrap;
+}
+.btn-sync:active { transform: scale(.96); }
+
+.header-info {
+  display: flex; gap: 14px; padding: 0 16px 10px;
+  font-size: 12px; color: #94a3b8; flex-wrap: wrap;
+}
+
+.step-nav { display: flex; border-top: 1px solid rgba(255,255,255,.1); }
+.step-tab {
+  flex: 1; background: transparent; border: none;
+  color: #94a3b8; padding: 10px 0; font-size: 14px; font-weight: 500;
+  cursor: pointer; border-bottom: 3px solid transparent;
+  font-family: inherit;
+}
+.step-tab.active {
+  background: rgba(255,255,255,.1); color: var(--white);
+  font-weight: 700; border-bottom-color: var(--blue);
+}
+.cart-badge {
+  background: var(--blue); color: var(--white); border-radius: 10px;
+  font-size: 11px; font-weight: 700; padding: 1px 6px; margin-left: 4px;
+}
+
+/* ─── Toast ─── */
+#toast {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+  color: var(--white); padding: 10px 22px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; z-index: 999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25); max-width: 90%; text-align: center;
+  display: none; animation: fadeIn .2s;
+}
+#toast.show { display: block; }
+#toast.success { background: var(--green); }
+#toast.error { background: var(--red); }
+#toast.info { background: var(--blue); }
+
+/* ─── Modal overlay ─── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; padding: 20px;
+}
+.modal-box {
+  background: var(--white); border-radius: 16px; padding: 28px;
+  max-width: 340px; width: 100%; text-align: center;
+  animation: fadeIn .25s;
+}
+.modal-icon { font-size: 48px; margin-bottom: 8px; }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--red); }
+.modal-text { font-size: 14px; color: var(--text-soft); line-height: 1.5; margin-bottom: 18px; }
+.modal-btn {
+  background: var(--navy); color: var(--white); border: none; border-radius: 10px;
+  padding: 12px 32px; font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+}
+
+/* ─── Main Content ─── */
+main { flex: 1; padding-bottom: 80px; }
+.section { padding: 24px 16px; }
+
+.welcome-icon { font-size: 56px; text-align: center; margin-bottom: 8px; }
+.section-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; color: var(--navy); }
+.section-desc { font-size: 14px; color: var(--text-soft); margin-bottom: 20px; line-height: 1.5; }
+
+/* ─── Inputs ─── */
+.input-large {
+  width: 100%; padding: 16px 14px; font-size: 17px; font-weight: 500;
+  border: 2px solid var(--gray-border); border-radius: var(--radius);
+  outline: none; margin-bottom: 14px; font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+}
+.input-large:focus { border-color: var(--blue); }
+
+.input-medium {
+  width: 100%; padding: 14px 10px; font-size: 18px; font-weight: 700;
+  border: 2px solid var(--gray-border); border-radius: 10px;
+  text-align: center; font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+}
+.input-small {
+  width: 120px; padding: 12px 10px; font-size: 16px; font-weight: 700;
+  border: 2px solid var(--gray-border); border-radius: 10px;
+  font-family: inherit;
+}
+.price-input {
+  width: 90px; padding: 10px 8px; font-size: 16px; font-weight: 700;
+  border: 2px solid var(--gray-border); border-radius: 10px;
+  text-align: center; font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+}
+textarea {
+  width: 100%; padding: 12px; font-size: 14px; font-family: inherit;
+  border: 2px solid var(--gray-border); border-radius: 10px;
+  resize: vertical;
+}
+
+/* ─── Buttons ─── */
+.btn-primary {
+  width: 100%; padding: 16px; font-size: 17px; font-weight: 800;
+  background: var(--navy); color: var(--white); border: none;
+  border-radius: var(--radius); cursor: pointer; letter-spacing: 1px;
+  margin-bottom: 10px; font-family: inherit;
+}
+.btn-primary:active { transform: scale(.97); }
+.btn-primary:disabled { opacity: .4; }
+
+.btn-secondary {
+  width: 100%; padding: 14px; font-size: 15px; font-weight: 600;
+  background: var(--white); color: var(--navy);
+  border: 2px solid var(--gray-border); border-radius: var(--radius);
+  cursor: pointer; margin-bottom: 10px; font-family: inherit;
+}
+
+.btn-save {
+  width: 100%; padding: 18px; font-size: 18px; font-weight: 800;
+  background: var(--green); color: var(--white); border: none;
+  border-radius: var(--radius-lg); cursor: pointer; letter-spacing: .5px;
+  margin-bottom: 8px; font-family: inherit;
+}
+.btn-save:active { transform: scale(.97); }
+
+.btn-back {
+  width: 100%; padding: 14px; font-size: 15px; font-weight: 600;
+  background: transparent; color: var(--gray); border: none;
+  cursor: pointer; margin-top: 6px; font-family: inherit;
+}
+
+.btn-add {
+  background: var(--navy); color: var(--white); border: none;
+  border-radius: 10px; padding: 12px 16px; font-size: 14px;
+  font-weight: 700; cursor: pointer; white-space: nowrap;
+  font-family: inherit;
+}
+.btn-add:active { transform: scale(.95); }
+
+.btn-remove {
+  background: var(--red-light); color: var(--red); border: none;
+  border-radius: 8px; width: 36px; height: 36px; font-size: 16px;
+  font-weight: 700; cursor: pointer;
+}
+
+/* ─── Client Grid ─── */
+.client-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.client-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 18px 10px; background: var(--white);
+  border: 2px solid var(--gray-border); border-radius: var(--radius-lg);
+  cursor: pointer; font-family: inherit; transition: border-color .15s;
+}
+.client-card:active { border-color: var(--blue); background: var(--blue-light); }
+.client-card.new { border-color: var(--blue); background: #f0f6ff; }
+.client-icon { font-size: 28px; }
+.client-name { font-size: 14px; font-weight: 700; color: var(--navy); text-align: center; }
+
+/* ─── Category Tabs ─── */
+.cat-scroll {
+  display: flex; overflow-x: auto; gap: 6px; padding: 12px 16px;
+  background: var(--white); border-bottom: 1px solid var(--gray-border);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cat-scroll::-webkit-scrollbar { display: none; }
+
+.cat-btn {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px; padding: 10px 14px; min-width: 76px;
+  background: var(--gray-light); border: 1.5px solid var(--gray-border);
+  border-radius: var(--radius); cursor: pointer; flex-shrink: 0;
+  font-family: inherit; transition: all .15s;
+}
+.cat-btn.active {
+  background: var(--blue-light); border-color: var(--blue);
+  border-width: 2px;
+}
+.cat-icon { font-size: 22px; }
+.cat-label { font-size: 11px; font-weight: 700; color: var(--navy); white-space: nowrap; }
+
+/* ─── Product List ─── */
+.product-list { padding: 10px 16px; }
+.product-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; background: var(--white); border-radius: var(--radius);
+  margin-bottom: 8px; border: 1px solid var(--gray-border);
+  animation: fadeIn .2s ease-out;
+}
+.product-info { flex: 1; margin-right: 10px; }
+.product-name { font-size: 16px; font-weight: 700; color: var(--navy); }
+.product-meta { font-size: 13px; color: var(--text-soft); margin-top: 2px; }
+.product-piso { font-size: 11px; color: #94a3b8; }
+
+/* ─── Qty Control ─── */
+.qty-control {
+  display: flex; align-items: center;
+  border: 2px solid var(--navy); border-radius: 10px; overflow: hidden;
+}
+.qty-btn {
+  background: var(--navy); color: var(--white); border: none;
+  width: 48px; height: 48px; font-size: 24px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+}
+.qty-btn:active { opacity: .8; }
+.qty-value {
+  width: 48px; text-align: center; font-size: 20px; font-weight: 800;
+  color: var(--navy); background: var(--white); line-height: 48px;
+}
+
+/* ─── Floating Cart ─── */
+.floating-cart {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: var(--blue); color: var(--white); border: none;
+  border-radius: var(--radius-lg); padding: 16px 24px; font-size: 15px;
+  font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(37,99,235,.4); z-index: 90;
+  max-width: 488px; width: calc(100% - 32px); text-align: center;
+  font-family: inherit; animation: slideUp .3s cubic-bezier(.22,.68,0,1);
+}
+.floating-cart:active { transform: translateX(-50%) scale(.97); }
+
+/* ─── Cart Items ─── */
+.cart-item {
+  background: var(--white); border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 10px; border: 1px solid var(--gray-border);
+}
+.cart-item-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.cart-item-name { font-size: 16px; font-weight: 700; color: var(--navy); }
+.cart-item-row {
+  display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+}
+.small-label {
+  font-size: 11px; font-weight: 600; color: var(--text-soft);
+  display: block; margin-bottom: 4px; text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.cart-subtotal {
+  font-size: 17px; font-weight: 800; color: var(--green); margin-left: auto;
+}
+
+/* ─── Isopor / Pagamento ─── */
+.divider { height: 1px; background: var(--gray-border); margin: 20px 0; }
+.sub-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+.isopor-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.isopor-field { flex: 1; }
+.field-label {
+  font-size: 12px; font-weight: 700; color: var(--text-soft);
+  display: block; margin-bottom: 4px; text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.saldo-value {
+  padding: 14px 10px; font-size: 18px; font-weight: 800;
+  background: var(--gray-light); border-radius: 10px; color: var(--navy);
+  text-align: center;
+}
+
+.pag-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.pag-btn {
+  flex: 1; padding: 14px; font-size: 15px; font-weight: 700;
+  background: var(--white); color: var(--navy);
+  border: 2px solid var(--gray-border); border-radius: 10px;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.pag-btn.active {
+  background: var(--navy); color: var(--white); border-color: var(--navy);
+}
+
+.desc-row { margin-bottom: 8px; }
+
+/* ─── Totals ─── */
+.total-block {
+  background: var(--gray-light); border-radius: var(--radius);
+  padding: 14px 16px; margin: 16px 0;
+}
+.total-row {
+  display: flex; justify-content: space-between;
+  font-size: 15px; font-weight: 500; margin-bottom: 4px;
+}
+.total-row.discount { color: var(--red); }
+.total-final {
+  display: flex; justify-content: space-between;
+  font-size: 22px; font-weight: 800; color: var(--navy);
+  margin-top: 8px; padding-top: 8px;
+  border-top: 2px solid var(--gray-border);
+}
+
+/* ─── Done screen ─── */
+.done-icon { font-size: 64px; text-align: center; margin-bottom: 8px; }
+
+/* ─── History ─── */
+.history-card {
+  background: var(--white); border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 10px; border: 1px solid var(--gray-border);
+}
+.history-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.badge-synced {
+  font-size: 11px; font-weight: 700; color: var(--green);
+  background: var(--green-light); padding: 3px 8px; border-radius: 6px;
+}
+.badge-pending {
+  font-size: 11px; font-weight: 700; color: var(--amber);
+  background: var(--amber-light); padding: 3px 8px; border-radius: 6px;
+}
+.history-meta { font-size: 12px; color: var(--text-soft); margin-bottom: 6px; }
+.history-items { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.history-item {
+  font-size: 12px; background: var(--gray-light); padding: 3px 8px;
+  border-radius: 6px; color: var(--navy); font-weight: 500;
+}
+.history-total { font-size: 15px; font-weight: 700; color: var(--navy); }
+
+/* ─── Empty state ─── */
+.empty { text-align: center; padding: 40px 20px; color: var(--text-soft); font-size: 15px; }
+
+/* ─── Footer ─── */
+footer {
+  text-align: center; padding: 12px 16px;
+  font-size: 11px; color: var(--text-soft);
+  border-top: 1px solid var(--gray-border);
+}
+
+/* ─── Online/Offline indicator ─── */
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block; margin-right: 4px;
+}
+.status-dot.online { background: #22c55e; }
+.status-dot.offline { background: var(--red); }
+
+/* ─── Oculta telas ─── */
+.screen { display: none; }
+.screen.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     HEADER
+     ══════════════════════════════════════ -->
+<header id="header">
+  <div class="header-top">
+    <div class="logo-block">
+      <span class="logo-icon">🌱</span>
+      <div>
+        <div class="logo-text">AGROPLAN</div>
+        <div class="logo-sub">Pedidos de Entrega</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="statusIndicator" style="font-size:12px;color:#94a3b8">
+        <span class="status-dot online" id="statusDot"></span>
+        <span id="statusText">Online</span>
+      </span>
+      <button class="btn-icon" id="btnHistory" style="display:none" onclick="showScreen('history')">
+        📋 <span class="badge" id="orderCountBadge">0</span>
+      </button>
+      <button class="btn-sync" id="btnSync" style="display:none" onclick="syncOrders()">
+        🔄 Sincronizar (<span id="pendingCount">0</span>)
+      </button>
+    </div>
+  </div>
+  <div class="header-info" id="headerInfo" style="display:none">
+    <span id="headerDriver"></span>
+    <span id="headerDate"></span>
+    <span id="headerClient" style="display:none"></span>
+  </div>
+  <div class="step-nav" id="stepNav" style="display:none">
+    <button class="step-tab active" id="tabProducts" onclick="showScreen('products')">Produtos</button>
+    <button class="step-tab" id="tabCart" onclick="showScreen('cart')">
+      Carrinho <span class="cart-badge" id="cartCountBadge" style="display:none">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Modal de alerta de preço -->
+<div id="priceModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Preço Abaixo do Piso</div>
+    <div class="modal-text" id="priceModalText"></div>
+    <button class="modal-btn" onclick="closePriceModal()">Entendi</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREENS
+     ══════════════════════════════════════ -->
+<main>
+
+  <!-- TELA: MOTORISTA -->
+  <div id="screen-driver" class="screen active">
+    <div class="section fade-in">
+      <div class="welcome-icon">🚛</div>
+      <h2 class="section-title">Identificação do Motorista</h2>
+      <p class="section-desc">Informe seu nome para iniciar os pedidos do dia.</p>
+      <input class="input-large" id="driverInput" placeholder="Seu nome..." autocomplete="off"
+             onkeydown="if(event.key==='Enter') confirmDriver()">
+      <button class="btn-primary" onclick="confirmDriver()">ENTRAR →</button>
+    </div>
+  </div>
+
+  <!-- TELA: CLIENTE -->
+  <div id="screen-client" class="screen">
+    <div class="section fade-in">
+      <h2 class="section-title">Selecione o Cliente</h2>
+      <input class="input-large" id="clientSearch" placeholder="Buscar cliente..."
+             oninput="filterClients()" autocomplete="off">
+      <div class="client-grid" id="clientGrid"></div>
+    </div>
+  </div>
+
+  <!-- TELA: PRODUTOS -->
+  <div id="screen-products" class="screen">
+    <div class="cat-scroll" id="catScroll"></div>
+    <div class="product-list" id="productList"></div>
+    <button class="floating-cart" id="floatingCart" style="display:none" onclick="showScreen('cart')">
+      🛒 Ver Carrinho (<span id="floatCartCount">0</span> itens) · <span id="floatCartTotal">R$ 0,00</span>
+    </button>
+  </div>
+
+  <!-- TELA: CARRINHO -->
+  <div id="screen-cart" class="screen">
+    <div class="section fade-in" id="cartContent"></div>
+  </div>
+
+  <!-- TELA: CONCLUÍDO -->
+  <div id="screen-done" class="screen">
+    <div class="section fade-in">
+      <div class="done-icon">✅</div>
+      <h2 class="section-title">Pedido Salvo!</h2>
+      <p class="section-desc" id="doneText"></p>
+      <button class="btn-primary" onclick="newOrder()">📝 Novo Pedido</button>
+      <button class="btn-secondary" onclick="showScreen('history')">📋 Ver Histórico</button>
+    </div>
+  </div>
+
+  <!-- TELA: HISTÓRICO -->
+  <div id="screen-history" class="screen">
+    <div class="section fade-in" id="historyContent"></div>
+  </div>
+
+</main>
+
+<footer>Agroplan Distribuidora · Cordilheira Alta, SC</footer>
+
+<script>
+// ══════════════════════════════════════════════════════
+// AGROPLAN PWA — JavaScript
+// Versão: 1.0.0
+// ══════════════════════════════════════════════════════
+
+// ─── CONFIGURAÇÃO ───
+// URL do Google Apps Script (substituir após criar o endpoint)
+const SYNC_URL = '';
+// Quando o Apps Script estiver pronto, descomentar e preencher:
+// const SYNC_URL = 'https://script.google.com/macros/s/SEU_ID_AQUI/exec';
+
+// ─── CATÁLOGO DE PRODUTOS ───
+const CATEGORIES = [
+  { id: 'brasicas',   label: 'Brásicas',       icon: '🥬' },
+  { id: 'alfaces',    label: 'Alfaces',        icon: '🥗' },
+  { id: 'verao',      label: 'Verão',          icon: '🍅' },
+  { id: 'raizes',     label: 'Raízes/Cebola',  icon: '🧅' },
+  { id: 'temperos',   label: 'Temperos/Chás',  icon: '🌿' },
+  { id: 'flores',     label: 'Flores',         icon: '🌸' },
+  { id: 'frutiferas', label: 'Frutíferas',     icon: '🌳' },
+  { id: 'sementes',   label: 'Sementes',       icon: '🌱' },
+];
+
+const PRODUCTS = [
+  // Brásicas - cx 15
+  { id:1,  name:'Couve-flor',        cat:'brasicas',  preco:25, piso:22, un:'cx 15' },
+  { id:2,  name:'Couve-folha',       cat:'brasicas',  preco:25, piso:22, un:'cx 15' },
+  { id:3,  name:'Repolho Coração',   cat:'brasicas',  preco:33, piso:28, un:'cx 15' },
+  { id:4,  name:'Repolho Híbrido',   cat:'brasicas',  preco:25, piso:22, un:'cx 15' },
+  { id:5,  name:'Brócolis',          cat:'brasicas',  preco:28, piso:24, un:'cx 15' },
+  { id:6,  name:'Agrião',            cat:'brasicas',  preco:28, piso:24, un:'cx 15' },
+  { id:7,  name:'Bocado',            cat:'brasicas',  preco:25, piso:22, un:'cx 15' },
+  // Alfaces
+  { id:8,  name:'Crespa Grazina',    cat:'alfaces',   preco:25, piso:22, un:'cx 15' },
+  { id:9,  name:'Crespa Valentina',  cat:'alfaces',   preco:25, piso:22, un:'cx 15' },
+  { id:10, name:'Crespa Thaís',      cat:'alfaces',   preco:25, piso:22, un:'cx 15' },
+  { id:11, name:'Crespa Lilian',     cat:'alfaces',   preco:25, piso:22, un:'cx 15' },
+  { id:12, name:'Oropo Híbrido',     cat:'alfaces',   preco:25, piso:22, un:'cx 15' },
+  // Verão
+  { id:13, name:'Tomate',            cat:'verao',     preco:30, piso:25, un:'cx' },
+  { id:14, name:'Pimentão',          cat:'verao',     preco:30, piso:25, un:'cx' },
+  { id:15, name:'Cabutiá',           cat:'verao',     preco:35, piso:30, un:'cx' },
+  { id:16, name:'Pepino',            cat:'verao',     preco:28, piso:22, un:'cx' },
+  // Raízes/Cebola
+  { id:17, name:'Cebolinha',         cat:'raizes',    preco:25, piso:22, un:'cx 15' },
+  { id:18, name:'Cebola de Cabeça',  cat:'raizes',    preco:25, piso:22, un:'maço' },
+  { id:19, name:'Alho Porró',        cat:'raizes',    preco:25, piso:22, un:'cx 15' },
+  { id:20, name:'Acelga',            cat:'raizes',    preco:25, piso:22, un:'cx 15' },
+  { id:21, name:'Salsão',            cat:'raizes',    preco:25, piso:22, un:'cx 15' },
+  { id:22, name:'Rabanete',          cat:'raizes',    preco:25, piso:22, un:'cx' },
+  { id:23, name:'Beterraba',         cat:'raizes',    preco:25, piso:22, un:'cx' },
+  // Temperos/Chás
+  { id:24, name:'Orégano',           cat:'temperos',  preco:25, piso:20, un:'cx' },
+  { id:25, name:'Chá Camomila',      cat:'temperos',  preco:25, piso:20, un:'cx' },
+  { id:26, name:'Chá Hortelã',       cat:'temperos',  preco:25, piso:20, un:'cx' },
+  { id:27, name:'Chá Boldo',         cat:'temperos',  preco:25, piso:20, un:'cx' },
+  // Flores
+  { id:28, name:'Petúnia',           cat:'flores',    preco:25, piso:20, un:'cx' },
+  { id:29, name:'Gazânia',           cat:'flores',    preco:25, piso:20, un:'cx' },
+  { id:30, name:'Boca de Leão',      cat:'flores',    preco:25, piso:20, un:'cx' },
+  { id:31, name:'Tagetes',           cat:'flores',    preco:25, piso:20, un:'cx' },
+  // Frutíferas
+  { id:32, name:'Frutífera (geral)', cat:'frutiferas', preco:30, piso:25, un:'muda' },
+  // Sementes
+  { id:33, name:'Sementes (geral)',   cat:'sementes',  preco:15, piso:10, un:'pct' },
+];
+
+// Clientes cadastrados (será expandido com dados reais)
+const CLIENTS = [
+  'AgroSul', 'Cris', 'Marcos Super Royal', 'Prefeitura',
+  'Iboi', 'Douglas', 'Loja Centro', 'Mercado Bela Vista'
+];
+
+// ─── ESTADO DO APP ───
+let state = {
+  driver: '',
+  client: '',
+  cart: [],          // [{...product, qty, precoVenda}]
+  activeCat: 'brasicas',
+  cxEntregues: 0,
+  cxRecolhidas: 0,
+  pagamento: 'prazo',
+  desconto: 0,
+  obs: '',
+  currentScreen: 'driver',
+};
+
+// ─── UTILITÁRIOS ───
+function fmt(v) {
+  return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+}
+
+function today() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+function getOrders() {
+  try { return JSON.parse(localStorage.getItem('agroplan_orders') || '[]'); }
+  catch { return []; }
+}
+
+function setOrders(orders) {
+  localStorage.setItem('agroplan_orders', JSON.stringify(orders));
+}
+
+function getSavedDriver() {
+  return localStorage.getItem('agroplan_driver') || '';
+}
+
+function setSavedDriver(name) {
+  localStorage.setItem('agroplan_driver', name);
+}
+
+// ─── TOAST ───
+let toastTimer = null;
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || 'success');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2500);
+}
+
+// ─── TELA / NAVEGAÇÃO ───
+function showScreen(name) {
+  state.currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-' + name);
+  if (target) target.classList.add('active');
+
+  // Atualiza header
+  const nav = document.getElementById('stepNav');
+  const clientSpan = document.getElementById('headerClient');
+  nav.style.display = (name === 'products' || name === 'cart') ? 'flex' : 'none';
+
+  document.getElementById('tabProducts').className = 'step-tab' + (name === 'products' ? ' active' : '');
+  document.getElementById('tabCart').className = 'step-tab' + (name === 'cart' ? ' active' : '');
+
+  if (name === 'products' || name === 'cart') {
+    clientSpan.style.display = '';
+    clientSpan.textContent = '🏪 ' + state.client;
+  } else {
+    clientSpan.style.display = 'none';
+  }
+
+  // Render dinâmico
+  if (name === 'products') renderProducts();
+  if (name === 'cart') renderCart();
+  if (name === 'history') renderHistory();
+
+  updateBadges();
+  window.scrollTo(0, 0);
+}
+
+function updateBadges() {
+  const orders = getOrders();
+  const pending = orders.filter(o => !o.synced);
+
+  document.getElementById('orderCountBadge').textContent = orders.length;
+  document.getElementById('pendingCount').textContent = pending.length;
+  document.getElementById('btnSync').style.display = pending.length > 0 ? '' : 'none';
+
+  const cartCount = state.cart.reduce((s,i) => s + i.qty, 0);
+  const cartBadge = document.getElementById('cartCountBadge');
+  const floatCart = document.getElementById('floatingCart');
+
+  if (cartCount > 0) {
+    cartBadge.textContent = cartCount;
+    cartBadge.style.display = '';
+    if (state.currentScreen === 'products') {
+      floatCart.style.display = '';
+      document.getElementById('floatCartCount').textContent = cartCount;
+      document.getElementById('floatCartTotal').textContent = fmt(cartTotal());
+    } else {
+      floatCart.style.display = 'none';
+    }
+  } else {
+    cartBadge.style.display = 'none';
+    floatCart.style.display = 'none';
+  }
+}
+
+function cartTotal() {
+  return state.cart.reduce((s,i) => s + i.qty * i.precoVenda, 0);
+}
+
+// ─── MOTORISTA ───
+function confirmDriver() {
+  const input = document.getElementById('driverInput');
+  const name = input.value.trim();
+  if (!name) return;
+  state.driver = name;
+  setSavedDriver(name);
+
+  document.getElementById('btnHistory').style.display = '';
+  document.getElementById('headerInfo').style.display = '';
+  document.getElementById('headerDriver').textContent = '👤 ' + name;
+  document.getElementById('headerDate').textContent = '📅 ' + today();
+
+  showScreen('client');
+}
+
+// ─── CLIENTES ───
+function renderClients(filter) {
+  const grid = document.getElementById('clientGrid');
+  const q = (filter || '').toLowerCase();
+  const filtered = q ? CLIENTS.filter(c => c.toLowerCase().includes(q)) : CLIENTS;
+
+  let html = filtered.map(c =>
+    `<button class="client-card" onclick="selectClient('${c.replace(/'/g,"\\'")}')">
+      <span class="client-icon">🏪</span>
+      <span class="client-name">${c}</span>
+    </button>`
+  ).join('');
+
+  // Opção de novo cliente
+  if (q && !CLIENTS.some(c => c.toLowerCase() === q)) {
+    html += `<button class="client-card new" onclick="selectClient('${q.replace(/'/g,"\\'")}')">
+      <span class="client-icon">➕</span>
+      <span class="client-name">Novo: "${filter}"</span>
+    </button>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function filterClients() {
+  renderClients(document.getElementById('clientSearch').value);
+}
+
+function selectClient(name) {
+  state.client = name;
+  state.cart = [];
+  state.cxEntregues = 0;
+  state.cxRecolhidas = 0;
+  state.pagamento = 'prazo';
+  state.desconto = 0;
+  state.obs = '';
+  state.activeCat = 'brasicas';
+  showScreen('products');
+}
+
+// ─── CATEGORIAS ───
+function renderCatTabs() {
+  const el = document.getElementById('catScroll');
+  el.innerHTML = CATEGORIES.map(c =>
+    `<button class="cat-btn${state.activeCat === c.id ? ' active' : ''}"
+             onclick="switchCat('${c.id}')">
+      <span class="cat-icon">${c.icon}</span>
+      <span class="cat-label">${c.label}</span>
+    </button>`
+  ).join('');
+}
+
+function switchCat(id) {
+  state.activeCat = id;
+  renderCatTabs();
+  renderProductItems();
+}
+
+// ─── PRODUTOS ───
+function renderProducts() {
+  renderCatTabs();
+  renderProductItems();
+}
+
+function renderProductItems() {
+  const list = document.getElementById('productList');
+  const items = PRODUCTS.filter(p => p.cat === state.activeCat);
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty">Nenhum produto nesta categoria.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(p => {
+    const inCart = state.cart.find(i => i.id === p.id);
+    const actionHtml = inCart
+      ? `<div class="qty-control">
+           <button class="qty-btn" onclick="updateQty(${p.id},-1)">−</button>
+           <span class="qty-value">${inCart.qty}</span>
+           <button class="qty-btn" onclick="updateQty(${p.id},1)">+</button>
+         </div>`
+      : `<button class="btn-add" onclick="addToCart(${p.id})">+ Adicionar</button>`;
+
+    return `<div class="product-card">
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-meta">
+          ${fmt(p.preco)} / ${p.un}
+          <span class="product-piso"> · Piso: ${fmt(p.piso)}</span>
+        </div>
+      </div>
+      ${actionHtml}
+    </div>`;
+  }).join('');
+}
+
+function addToCart(productId) {
+  const p = PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+  const exists = state.cart.find(i => i.id === p.id);
+  if (exists) {
+    exists.qty++;
+  } else {
+    state.cart.push({ ...p, qty: 1, precoVenda: p.preco });
+  }
+  showToast(p.name + ' adicionado');
+  renderProductItems();
+  updateBadges();
+}
+
+function updateQty(id, delta) {
+  const item = state.cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty = Math.max(0, item.qty + delta);
+  if (item.qty === 0) {
+    state.cart = state.cart.filter(i => i.id !== id);
+  }
+  if (state.currentScreen === 'products') renderProductItems();
+  if (state.currentScreen === 'cart') renderCart();
+  updateBadges();
+}
+
+function updatePrice(id, val) {
+  const num = parseFloat(val) || 0;
+  const item = state.cart.find(i => i.id === id);
+  if (!item) return;
+  if (num > 0 && num < item.piso) {
+    document.getElementById('priceModalText').innerHTML =
+      `O preço mínimo para <strong>${item.name}</strong> é <strong>${fmt(item.piso)}</strong>.<br>Não é possível vender abaixo deste valor.`;
+    document.getElementById('priceModal').style.display = '';
+    // Reverte o input
+    document.getElementById('price-' + id).value = item.precoVenda;
+    return;
+  }
+  item.precoVenda = num;
+  renderCart();
+}
+
+function closePriceModal() {
+  document.getElementById('priceModal').style.display = 'none';
+}
+
+function removeItem(id) {
+  state.cart = state.cart.filter(i => i.id !== id);
+  renderCart();
+  updateBadges();
+}
+
+// ─── CARRINHO ───
+function renderCart() {
+  const el = document.getElementById('cartContent');
+
+  if (state.cart.length === 0) {
+    el.innerHTML = `
+      <h2 class="section-title">Carrinho do Pedido</h2>
+      <div class="empty">
+        <p>Carrinho vazio.</p>
+        <button class="btn-secondary" onclick="showScreen('products')">← Adicionar Produtos</button>
+      </div>`;
+    updateBadges();
+    return;
+  }
+
+  const total = cartTotal();
+  const desc = parseFloat(state.desconto) || 0;
+  const final = Math.max(0, total - desc);
+  const saldo = (parseInt(state.cxEntregues) || 0) - (parseInt(state.cxRecolhidas) || 0);
+
+  let html = '<h2 class="section-title">Carrinho do Pedido</h2>';
+
+  // Itens
+  state.cart.forEach(item => {
+    html += `
+    <div class="cart-item">
+      <div class="cart-item-top">
+        <div class="cart-item-name">${item.name}</div>
+        <button class="btn-remove" onclick="removeItem(${item.id})">✕</button>
+      </div>
+      <div class="cart-item-row">
+        <div>
+          <span class="small-label">Qtd:</span>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateQty(${item.id},-1)">−</button>
+            <span class="qty-value">${item.qty}</span>
+            <button class="qty-btn" onclick="updateQty(${item.id},1)">+</button>
+          </div>
+        </div>
+        <div>
+          <span class="small-label">Preço (${item.un}):</span>
+          <input class="price-input" id="price-${item.id}" type="number"
+                 value="${item.precoVenda}" min="${item.piso}" step="0.5"
+                 onchange="updatePrice(${item.id}, this.value)">
+        </div>
+        <div class="cart-subtotal">${fmt(item.qty * item.precoVenda)}</div>
+      </div>
+    </div>`;
+  });
+
+  // Isopor
+  html += `
+  <div class="divider"></div>
+  <h3 class="sub-title">📦 Caixas de Isopor</h3>
+  <div class="isopor-row">
+    <div class="isopor-field">
+      <label class="field-label">Entregues</label>
+      <input class="input-medium" type="number" min="0" placeholder="0"
+             value="${state.cxEntregues || ''}"
+             oninput="state.cxEntregues=this.value;renderSaldo()">
+    </div>
+    <div class="isopor-field">
+      <label class="field-label">Recolhidas</label>
+      <input class="input-medium" type="number" min="0" placeholder="0"
+             value="${state.cxRecolhidas || ''}"
+             oninput="state.cxRecolhidas=this.value;renderSaldo()">
+    </div>
+    <div class="isopor-field" style="text-align:center">
+      <label class="field-label">Saldo</label>
+      <div class="saldo-value" id="saldoIsopor">${saldo}</div>
+    </div>
+  </div>`;
+
+  // Pagamento
+  html += `
+  <h3 class="sub-title">💰 Pagamento</h3>
+  <div class="pag-row">
+    <button class="pag-btn${state.pagamento==='avista'?' active':''}"
+            onclick="setPagamento('avista')">À Vista</button>
+    <button class="pag-btn${state.pagamento==='prazo'?' active':''}"
+            onclick="setPagamento('prazo')">A Prazo</button>
+  </div>`;
+
+  // Desconto
+  html += `
+  <div class="desc-row">
+    <label class="field-label">Desconto (R$):</label>
+    <input class="input-small" type="number" min="0" placeholder="0,00"
+           value="${state.desconto || ''}"
+           oninput="state.desconto=this.value;renderTotals()">
+  </div>`;
+
+  // Obs
+  html += `
+  <div style="margin-top:12px">
+    <label class="field-label">Observações:</label>
+    <textarea placeholder="Anotações sobre o pedido..."
+              rows="2" oninput="state.obs=this.value">${state.obs}</textarea>
+  </div>`;
+
+  // Totais
+  html += `
+  <div class="total-block" id="totalBlock">
+    <div class="total-row">
+      <span>Subtotal:</span><span>${fmt(total)}</span>
+    </div>
+    ${desc > 0 ? `<div class="total-row discount">
+      <span>Desconto:</span><span>- ${fmt(desc)}</span>
+    </div>` : ''}
+    <div class="total-final">
+      <span>TOTAL:</span><span>${fmt(final)}</span>
+    </div>
+  </div>`;
+
+  // Botões
+  html += `
+  <button class="btn-save" onclick="saveOrder()">✅ SALVAR PEDIDO</button>
+  <button class="btn-back" onclick="showScreen('products')">← Continuar Adicionando</button>`;
+
+  el.innerHTML = html;
+}
+
+function renderSaldo() {
+  const s = (parseInt(state.cxEntregues)||0) - (parseInt(state.cxRecolhidas)||0);
+  const el = document.getElementById('saldoIsopor');
+  if (el) el.textContent = s;
+}
+
+function renderTotals() {
+  renderCart(); // Simplificado: re-renderiza o carrinho completo
+}
+
+function setPagamento(tipo) {
+  state.pagamento = tipo;
+  renderCart();
+}
+
+// ─── SALVAR PEDIDO ───
+function saveOrder() {
+  if (state.cart.length === 0) {
+    showToast('Carrinho vazio!', 'error');
+    return;
+  }
+
+  const total = cartTotal();
+  const desc = parseFloat(state.desconto) || 0;
+  const final = Math.max(0, total - desc);
+
+  const order = {
+    id: genId(),
+    motorista: state.driver,
+    cliente: state.client,
+    data: today(),
+    timestamp: new Date().toISOString(),
+    itens: state.cart.map(i => ({
+      nome: i.name,
+      categoria: i.cat,
+      quantidade: i.qty,
+      precoBase: i.preco,
+      precoVenda: i.precoVenda,
+      unidade: i.un,
+      subtotal: i.qty * i.precoVenda
+    })),
+    caixasEntregues: parseInt(state.cxEntregues) || 0,
+    caixasRecolhidas: parseInt(state.cxRecolhidas) || 0,
+    pagamento: state.pagamento,
+    desconto: desc,
+    totalBruto: total,
+    totalFinal: final,
+    observacoes: state.obs,
+    synced: false
+  };
+
+  const orders = getOrders();
+  orders.push(order);
+  setOrders(orders);
+
+  // Log para debug
+  console.log('=== PEDIDO SALVO ===');
+  console.log(JSON.stringify(order, null, 2));
+
+  // Mostra tela de sucesso
+  const pending = orders.filter(o => !o.synced).length;
+  document.getElementById('doneText').innerHTML =
+    `Pedido para <strong>${state.client}</strong> registrado com sucesso.` +
+    (pending > 0 ? ` ${pending} pedido(s) aguardando sincronização.` : '');
+
+  showScreen('done');
+  showToast('Pedido salvo com sucesso!');
+}
+
+// ─── NOVO PEDIDO ───
+function newOrder() {
+  state.client = '';
+  state.cart = [];
+  state.cxEntregues = 0;
+  state.cxRecolhidas = 0;
+  state.pagamento = 'prazo';
+  state.desconto = 0;
+  state.obs = '';
+  state.activeCat = 'brasicas';
+  document.getElementById('clientSearch').value = '';
+  showScreen('client');
+  renderClients();
+}
+
+// ─── SINCRONIZAÇÃO ───
+async function syncOrders() {
+  const orders = getOrders();
+  const pending = orders.filter(o => !o.synced);
+
+  if (pending.length === 0) {
+    showToast('Nenhum pedido pendente', 'info');
+    return;
+  }
+
+  // Verifica se tem URL do Apps Script configurada
+  if (!SYNC_URL) {
+    // Modo simulação
+    console.log('=== SIMULAÇÃO DE SINCRONIZAÇÃO ===');
+    console.log('Pedidos que seriam enviados:');
+    console.log(JSON.stringify(pending, null, 2));
+
+    // Marca como sincronizados
+    const updated = orders.map(o => ({ ...o, synced: true }));
+    setOrders(updated);
+    updateBadges();
+    showToast(`${pending.length} pedido(s) sincronizado(s)! (simulação)`);
+    if (state.currentScreen === 'history') renderHistory();
+    return;
+  }
+
+  // Envio real para Google Apps Script
+  try {
+    showToast('Enviando...', 'info');
+
+    const response = await fetch(SYNC_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ pedidos: pending })
+    });
+
+    // Com no-cors não temos acesso à resposta, assumimos sucesso
+    const updated = orders.map(o => ({ ...o, synced: true }));
+    setOrders(updated);
+    updateBadges();
+    showToast(`${pending.length} pedido(s) sincronizado(s)!`);
+    if (state.currentScreen === 'history') renderHistory();
+
+  } catch (err) {
+    console.error('Erro na sincronização:', err);
+    showToast('Erro ao sincronizar. Tente novamente.', 'error');
+  }
+}
+
+// ─── HISTÓRICO ───
+function renderHistory() {
+  const el = document.getElementById('historyContent');
+  const orders = getOrders();
+
+  let html = '<h2 class="section-title">Pedidos do Dia</h2>';
+
+  if (orders.length === 0) {
+    html += '<div class="empty">Nenhum pedido registrado.</div>';
+  } else {
+    orders.slice().reverse().forEach(o => {
+      const items = o.itens.map(i =>
+        `<span class="history-item">${i.quantidade}× ${i.nome}</span>`
+      ).join('');
+
+      const isopor = o.caixasEntregues > 0
+        ? ` · Isopor: ${o.caixasEntregues}↓ ${o.caixasRecolhidas}↑`
+        : '';
+
+      html += `
+      <div class="history-card">
+        <div class="history-top">
+          <strong>${o.cliente}</strong>
+          <span class="${o.synced ? 'badge-synced' : 'badge-pending'}">
+            ${o.synced ? '✓ Enviado' : '⏳ Pendente'}
+          </span>
+        </div>
+        <div class="history-meta">
+          ${o.data} · ${o.itens.length} itens · ${o.pagamento === 'avista' ? 'À Vista' : 'A Prazo'}
+        </div>
+        <div class="history-items">${items}</div>
+        <div class="history-total">Total: ${fmt(o.totalFinal)}${isopor}</div>
+      </div>`;
+    });
+  }
+
+  html += `<button class="btn-back" onclick="showScreen('${state.client ? 'products' : 'client'}')">← Voltar</button>`;
+  el.innerHTML = html;
+}
+
+// ─── STATUS ONLINE/OFFLINE ───
+function updateOnlineStatus() {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  if (navigator.onLine) {
+    dot.className = 'status-dot online';
+    text.textContent = 'Online';
+  } else {
+    dot.className = 'status-dot offline';
+    text.textContent = 'Offline';
+  }
+}
+
+window.addEventListener('online', () => {
+  updateOnlineStatus();
+  showToast('Conexão restabelecida!', 'info');
+  // Auto-sync quando reconectar
+  const pending = getOrders().filter(o => !o.synced);
+  if (pending.length > 0 && SYNC_URL) {
+    setTimeout(syncOrders, 2000);
+  }
+});
+
+window.addEventListener('offline', () => {
+  updateOnlineStatus();
+  showToast('Sem conexão. Pedidos serão salvos localmente.', 'info');
+});
+
+// ─── INICIALIZAÇÃO ───
+document.addEventListener('DOMContentLoaded', () => {
+  // Registra Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker registrado'))
+      .catch(err => console.log('SW falhou:', err));
+  }
+
+  // Verifica motorista salvo
+  const saved = getSavedDriver();
+  if (saved) {
+    state.driver = saved;
+    document.getElementById('driverInput').value = saved;
+    document.getElementById('btnHistory').style.display = '';
+    document.getElementById('headerInfo').style.display = '';
+    document.getElementById('headerDriver').textContent = '👤 ' + saved;
+    document.getElementById('headerDate').textContent = '📅 ' + today();
+    showScreen('client');
+    renderClients();
+  } else {
+    document.getElementById('driverInput').focus();
+  }
+
+  updateOnlineStatus();
+  updateBadges();
+  renderClients();
+});
+</script>
+</body>
+</html>

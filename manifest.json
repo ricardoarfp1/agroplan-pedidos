@@ -1,0 +1,17 @@
+{
+  "name": "Agroplan Pedidos",
+  "short_name": "Agroplan",
+  "description": "Sistema de pedidos para motoristas - Agroplan Distribuidora",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a2636",
+  "theme_color": "#1a2636",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%231a2636'/><text x='96' y='120' text-anchor='middle' font-size='100'>🌱</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
